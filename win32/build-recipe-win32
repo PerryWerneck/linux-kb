@@ -1,0 +1,454 @@
+#################################################################
+#
+# Win32 specific functions.
+#
+# Author: Perry Werneck <perry.werneck@gmail.com>
+#
+################################################################
+#
+# Copyright (c) 2022 Perry Werneck <perry.werneck@gmail.com>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2 or 3 as
+# published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program (see the file COPYING); if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
+#
+################################################################
+
+# Variables:
+# $BUILD_ROOT is the chroot
+# $PACKAGE_TYPE is the package format (NSIS, ZIP)
+# $TOPDIR/SOURCES includes the win32 sources
+# $RECIPEFILE the name of the config file
+
+recipe_setup_win32() {
+	:
+}
+
+recipe_prepare_win32() {
+    :
+}
+
+recipe_build_win32() {
+
+	mkdir -p ${TOPDIR}/BUILD
+	
+	if [ ! -e ${TOPDIR}/SOURCES ]; then
+	
+		if [ -d .svn ]; then
+		
+			echo "Get from svn"
+			ORIGIN_URL=$(LANG=C svn info | grep ^URL: | cut -d: -f2- | sed -e "s@ @@g")
+		
+			svn checkout "${ORIGIN_URL}" "${TOPDIR}/SOURCES"
+			if [ "$?" != "0" ]; then
+				exit -1
+			fi
+
+		else
+	
+			ORIGIN_URL=$(git remote get-url origin)
+			git clone "${ORIGIN_URL}" "${TOPDIR}/SOURCES"
+			if [ "$?" != "0" ]; then
+				exit -1
+			fi
+
+		fi
+
+	fi
+	
+	pushd ${TOPDIR}/BUILD
+
+	# TODO: Make it configurable.
+	WIN32HOST=x86_64-w64-mingw32
+	WIN32PREFIX="/usr/${WIN32HOST}/sys-root/mingw"
+
+	if [ -x ${TOPDIR}/SOURCES/autogen.sh ]; then
+		NOCONFIGURE=1 ${TOPDIR}/SOURCES/autogen.sh
+	fi
+
+	if [ -x ${TOPDIR}/SOURCES/configure ]; then
+		${TOPDIR}/SOURCES/configure \
+			--host=${WIN32HOST} \
+			--prefix=/ \
+			--sbindir=/bin/ \
+			--bindir=/bin/ \
+			--libdir=/bin/
+		if [ "$?" != "0" ]; then
+			exit -1
+		fi
+	fi
+
+	if [ -e Makefile ]; then
+		make all
+		if [ "$?" != "0" ]; then
+			exit -1
+		fi
+	else
+		echo "Cant identify build system"
+		exit -1
+	fi
+	
+	make DESTDIR=${BUILD_ROOT} install
+	if [ "$?" != "0" ]; then
+		exit -1
+	fi
+	
+	popd	
+
+	#
+	# Build modules
+	#
+	local libs_to_exclude="
+		advapi32.dll
+		cfgmgr32.dll
+		comctl32.dll
+		comdlg32.dll
+		crypt32.dll
+		d3d8.dll
+		d3d9.dll
+		ddraw.dll
+		dnsapi.dll
+		dsound.dll
+		dwmapi.dll
+		gdi32.dll
+		gdiplus.dll
+		glu32.dll
+		glut32.dll
+		imm32.dll
+		iphlpapi.dll
+		kernel32.dll
+		ksuser.dll
+		mpr.dll
+		mscms.dll
+		mscoree.dll
+		msimg32.dll
+		msvcr71.dll
+		msvcr80.dll
+		msvcr90.dll
+		msvcrt.dll
+		mswsock.dll
+		netapi32.dll
+		odbc32.dll
+		ole32.dll
+		oleacc.dll
+		oleaut32.dll
+		opengl32.dll
+		psapi.dll
+		rpcrt4.dll
+		secur32.dll
+		setupapi.dll
+		shell32.dll
+		shlwapi.dll
+		user32.dll
+		usp10.dll
+		version.dll
+		wininet.dll
+		winmm.dll
+		wldap32.dll
+		ws2_32.dll
+		wsock32.dll
+		winspool.drv
+		ntdll.dll
+		winhttp.dll
+		hid.dll
+		bcrypt.dll
+	"
+	
+	#
+	# Install pré-reqs
+	#
+	if [ ! -z "${REQUIRED_PACKAGES}" ]; then
+		local PRE_REQS=(${REQUIRED_PACKAGES})
+		local PACKAGE
+		for PACKAGE in "${PRE_REQS[@]}" 
+		do
+			rpm -q "${PACKAGE}" 2>&1 > /dev/null
+			if [ "$?" != "0" ]; then
+				echo "Package ${PACKAGE} not found."
+				exit -1
+			fi
+			
+			echo "Loading ${PACKAGE}"
+			local FILES=$(mktemp)						
+			rpm -ql "${PACKAGE}" | grep "${WIN32PREFIX}" >> ${FILES}
+			local FILE
+			while read FILE
+			do
+				local DESTFILE=$(echo "${FILE}" | sed -e "s|${WIN32PREFIX}||g")
+				if [ ! -d ${FILE} ]; then
+					echo "Installing ${FILE}"
+					mkdir -p $(dirname "${BUILD_ROOT}${DESTFILE}")
+					cp "${FILE}" "${BUILD_ROOT}${DESTFILE}"
+					if [ "$?" != "0" ]; then
+						echo "Cant copy ${FILE}"
+						exit -1
+					fi
+				fi
+			done < ${FILES}
+			rm -f ${FILES}
+		
+		done
+	fi
+	
+	#
+	# Scan for required libraries
+	#
+	local AGAIN=1
+	until [  ${AGAIN} == 0 ]; do
+
+		AGAIN=0
+
+		local SOURCES=$(mktemp)
+
+		find "${BUILD_ROOT}" -iname "*.dll" >	"${SOURCES}"
+		find "${BUILD_ROOT}" -iname "*.exe" >>	"${SOURCES}"
+
+		local REQUIRES=$(mktemp)
+		while read FILENAME
+		do
+			LANG=C objdump -p ${FILENAME} | grep "DLL Name:" | cut -d: -f2 | tr "[:upper:]" "[:lower:]" >> ${REQUIRES}
+		done < ${SOURCES}
+		rm -f ${SOURCES}
+
+		# Remove system libraries
+		for i in $libs_to_exclude; do
+			sed -i -e "/${i}/d" ${REQUIRES}
+		done
+
+		while read FILENAME
+		do
+			echo ${FILENAME}
+			
+			if [ ! -e "${BUILD_ROOT}/bin/${FILENAME}" ]; then
+
+				AGAIN=1
+				
+				if [ -e "${WIN32PREFIX}/bin/${FILENAME}" ]; then
+					#
+					# Install module from local MinGW
+					#
+
+					rpm -qf "${WIN32PREFIX}/bin/${FILENAME}" 2>&1 > /dev/null				
+					if [ "${?}" != "0" ]; then
+						#
+						# No package, just copy the file
+						#
+						echo "Installing ${WIN32PREFIX}/bin/${FILENAME}" 
+						cp "${WIN32PREFIX}/bin/${FILENAME}" "${BUILD_ROOT}/bin"
+						if [ "$?" != "0" ]; then
+							echo "Can't copy ${WIN32PREFIX}/bin/${FILENAME}"
+							exit -1
+						fi
+					else
+						#
+						# It's a package, copy it.
+						#
+						local DEPENDS=$(mktemp)
+						
+						rpm -qf "${WIN32PREFIX}/bin/${FILENAME}" > "${DEPENDS}"
+						rpm -q --requires "${PACKAGE}" | grep 'lang' | cut -d' ' -f1 >> "${DEPENDS}"
+						rpm -q --requires "${PACKAGE}" | grep 'data' | cut -d' ' -f1 >> "${DEPENDS}"
+						
+						local FILES=$(mktemp)						
+						while read PACKAGE
+						do
+							echo "Loading ${PACKAGE}"
+							rpm -ql "${PACKAGE}" | grep "${WIN32PREFIX}" >> ${FILES}
+						done < ${DEPENDS}
+						rm -f "${DEPENDS}"
+						
+						local FILE
+						while read FILE
+						do
+							local DESTFILE=$(echo "${FILE}" | sed -e "s|${WIN32PREFIX}||g")
+							if [ ! -d ${FILE} ]; then
+								echo "Installing ${FILE}"
+								FILEPATH="$(dirname ${DESTFILE})"
+								if [ "${FILEPATH}" != "." ]; then
+									echo "Creating ${FILEPATH}"
+									mkdir -p "${BUILD_ROOT}${FILEPATH}"
+									if [ "$?" != "0" ]; then
+										echo "Cant create ${FILEPATH}"
+										exit -1
+									fi
+								fi
+								cp "${FILE}" "${BUILD_ROOT}${DESTFILE}"
+								if [ "$?" != "0" ]; then
+									echo "Cant copy ${FILE}"
+									/bin/bash
+									exit -1
+								fi
+							fi
+						done < ${FILES}
+						rm -f ${FILES}
+						
+					fi
+					
+				else 
+
+					exit "Can't find ${FILENAME}"
+					exit -1
+
+				fi
+
+			fi
+		
+		done < ${REQUIRES}
+		rm -f ${REQUIRES}
+		
+	done
+	
+	#
+	# Finalize
+	#
+	
+	mkdir -p ${TOPDIR}/INSTALLER
+
+	# Sometimes you need files from system or sources
+	ln -s $(readlink -f "${WIN32PREFIX}") "${BUILD_ROOT}/SYSROOT"
+	if [ "$?" != "0" ]; then
+		exit -1
+	fi
+
+	ln -s $(readlink -f "${TOPDIR}/SOURCES") "${BUILD_ROOT}/SOURCES"
+	if [ "$?" != "0" ]; then
+		exit -1
+	fi
+	
+	if [ -z "${PKGDIR}" ]; then
+		PKGDIR=${TOPDIR}/PACKAGE
+	fi
+	
+	mkdir -p "${PKGDIR}"
+	if [ "$?" != "0" ]; then
+		exit -1
+	fi
+	
+	local NSIFILES=$(mktemp)
+	
+	# Sometimes the .nsi file is in the sources.
+	find "${TOPDIR}/SOURCES" -iname "*.nsi" > ${NSIFILES}
+	
+	# and sometimes it is generated by ./configure
+	find "${TOPDIR}/BUILD" -iname "*.nsi" >> ${NSIFILES}
+	
+	if [ "${PACKAGE_TYPE}" == "nsis" ]; then
+
+		local NSIFILE
+		while read NSIFILE
+		do
+			echo "Building ${NSIFILE}"
+			pushd ${BUILD_ROOT}
+			makensis \
+					-NOCD \
+					-inputcharset UTF8 \
+					-DBUILDROOT=. \
+					-DPKGDIR=${PKGDIR} \
+					-DSRCDIR=SOURCES \
+					-DSYSROOT=SYSROOT \
+					"${NSIFILE}"
+			
+			if [ "$?" != "0" ]; then
+				find .
+				echo "Cant build installer"
+				exit -1
+			fi
+			popd
+		done < ${NSIFILES}
+		rm -f ${NSIFILES}
+
+	elif [ "${PACKAGE_TYPE}" == "zip" ]; then
+
+		local ZIPNAME
+		
+		ZIPNAME="${PKGDIR}/package-$(date '+%Y%m%d').zip"
+		echo "Building ${ZIPNAME}"
+
+		pushd ${BUILD_ROOT}
+		zip -9 "${ZIPNAME}" bin/*.dll bin/*.exe
+		if [ "$?" != "0" ]; then
+			echo "Cant build zip"
+			exit -1
+		fi
+
+		if [ -d etc ]; then
+			zip -9 -r "${ZIPNAME}" etc/* 
+			if [ "$?" != "0" ]; then
+				echo "Cant build zip"
+				exit -1
+			fi
+		fi 
+
+		if [ -d share ]; then
+			zip -9 -r "${ZIPNAME}" share/* 
+			if [ "$?" != "0" ]; then
+				echo "Cant build zip"
+				exit -1
+			fi
+		fi 
+
+		if [ -d lib ]; then
+			zip -9 -r "${ZIPNAME}" lib/* 
+			if [ "$?" != "0" ]; then
+				echo "Cant build zip"
+				exit -1
+			fi
+		fi 
+		popd
+	
+		while read NSIFILE
+		do
+			mkdir -p ${TOPDIR}/nsi.tmp
+			local NSITMP
+			NSITMP="${TOPDIR}/nsi.tmp/$(basename ${NSIFILE})"
+			
+			cp "${NSIFILE}" "${NSITMP}"
+			if [ "$?" != "0" ]; then
+				echo "Cant copy ${NSIFILE}"
+				exit -1
+			fi
+			
+			sed -i -e "s@\${PKGDIR}@.@g" "${NSITMP}"
+
+			zip -9 -j "${ZIPNAME}" ${NSITMP}
+			if [ "$?" != "0" ]; then
+				echo "Cant build zip"
+				exit -1
+			fi
+		done < ${NSIFILES}
+				
+	else 
+		echo "Unexpected package type"
+		exit -1
+	fi
+
+	rm -f ${NSIFILES}
+					
+}
+
+recipe_resultdirs_win32() {
+	if [ -z "${PKGDIR}" ]; then
+		echo "PACKAGE"
+	fi
+	echo "${PKGDIR}"
+}
+
+recipe_cleanup_win32() {
+    :
+}
+
+# Local Variables:
+# mode: Shell-script
+# End:
+
+
