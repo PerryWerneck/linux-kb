@@ -1,0 +1,14 @@
+#!/bin/bash
+
+if [ -e *.cbp ]; then
+	/usr/bin/codeblocks --no-ipc --no-log *.cbp 2>&1 | logger -t codeblocks &
+	exit 0
+fi
+
+if [ -e src/os/linux/*.cbp ]; then
+	/usr/bin/codeblocks --no-ipc --no-log src/os/linux/*.cbp 2>&1 | logger -t codeblocks &
+	exit 0
+fi
+
+/usr/bin/codeblocks --no-ipc --no-log 2>&1 | logger -t codeblocks &
+

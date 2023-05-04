@@ -1,0 +1,23 @@
+#!/bin/bash
+
+if [ -x ./autogen.sh ]; then
+	NOCONFIGURE=1 ./autogen.sh
+	if [ "$?" != "0" ]; then
+		exit $?	
+	fi
+fi
+
+if [ -e ./env.win64 ]; then
+	source ./env.win64
+fi
+
+export HOST_CC=$(which gcc)
+
+./configure --cache-file=.win64.cache \
+			--host=x86_64-w64-mingw32 \
+			--prefix=/usr/x86_64-w64-mingw32/sys-root/mingw \
+			--libdir=/usr/x86_64-w64-mingw32/sys-root/mingw/lib \
+			$@
+
+exit $?
+
