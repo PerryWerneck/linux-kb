@@ -21,10 +21,10 @@ make_link() {
 	fi
 
 	if [ -e "${2}" ]; then
-		echo "${2}" -\> "${1}"
+		echo "${2} -> ${1} (Saving from OSC)" 
 		ln -f "${2}" "${1}"
-	elif [ -e "${1}/${2}" ]; then
-		echo "${1}" -\> "${2}"
+	elif [ -e ${1} ]; then
+		echo "${1} -> ${2} (Restoring from git)"
 		ln "${1}" "${2}"
 	fi
 
@@ -46,7 +46,7 @@ linux_package() {
 	done
 
 	if [ -e "${OSC_NAME}.dsc" ]; then
-		make_link "../../${PROJECT_NAME}/rpm/${OSC_NAME}.dsc" "${OSC_NAME}.dsc"
+		make_link "../../${PROJECT_NAME}/debian/${OSC_NAME}.dsc" "${OSC_NAME}.dsc"
 	fi
 	make_link "../../${PROJECT_NAME}/debian/${PROJECT_NAME}.dsc" "${PROJECT_NAME}.dsc"
 
@@ -59,7 +59,11 @@ linux_package() {
 	# Link _service
 	#
 	make_link "../../${PROJECT_NAME}/rpm/_service" "_service"
-	make_link "../../${PROJECT_NAME}/rpm/_servicedata" "_servicedata"
+	
+	# Never replaces local _servicedata
+	if [ -e "_servicedata" ]; then
+		ln -f "_servicedata" "../../${PROJECT_NAME}/rpm/_servicedata" 
+	fi
 
 	#
 	# Link 'RPM' files
