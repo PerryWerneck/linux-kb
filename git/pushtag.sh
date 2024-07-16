@@ -16,9 +16,22 @@ TAGNUMBER="${1}"
 
 if [ -z ${1} ]; then
 
+	TAGNUMBER=""
 	if [ -e configure.ac ]; then
-		TAGNUMBER=$(grep AC_INIT configure.ac | cut -d[ -f3 | cut -d] -f1 | cut -d. -f1-2)
+		TAGNUMBER=$(grep AC_INIT configure.ac | cut -d[ -f3 | cut -d] -f1)
 		echo "Detected tag was ${TAGNUMBER}"
+	fi
+	
+	if [ -z ${TAGNUMBER} ]; then
+		TAGNUMBER=$(find . -iname '*.py' -exec grep '__version__' {} \; | cut -d\' -f2 | sort -r -u | head -n 1)
+	fi
+	
+	if [ -z ${TAGNUMBER} ]; then
+		SPECFILE=$(find . -name '*.spec' | head --lines=1)
+		if [ -e ${SPECFILE} ]; then
+			TAGNUMBER=$(grep -i "^Version:" ${SPECFILE} | cut -d: -f2 | cut -d+ -f1 | tr -d '[:blank:]')
+			echo "Specfile tag was ${TAGNUMBER}"
+		fi
 	fi
 
 fi

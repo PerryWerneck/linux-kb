@@ -1,113 +1,88 @@
 #!/bin/bash
 
-OSC_NAME=$(basename $(readlink -f ${PWD}))
-
-PROJECT_NAME="${1}"
+PROJECT_NAME=$(find . -maxdepth 1 -name '*.spec' | cut -d/ -f2 | cut -d. -f1)
 if [ -z "${PROJECT_NAME}" ]; then
-	PROJECT_NAME="$(basename $(readlink -f .))"
-	echo "Using ${PROJECT_NAME} as project name"
+	echo "No spec file in current dir"
+	exit -1
 fi
 
-PACKAGE_NAME="$(basename $(readlink -f .))"
+echo "Project name:	${PROJECT_NAME}"
+
+get_project_path() {
+
+	PROJECT_PATH="${HOME}/project/$(basename $PWD | sed -e "s@-@/@g")"
+	if [ -d "${PROJECT_PATH}" ]; then
+		return
+	fi
+
+	PROJECT_PATH="${HOME}/project/$(dirname ${PWD} | rev | cut -d: -f1 | rev)/tools/$(basename ${PWD})"
+	if [ -d "${PROJECT_PATH}" ]; then
+		return
+	fi
+
+	if [ -e "${HOME}/project/udjat/${PROJECT_NAME}/rpm/${PROJECT_NAME}.spec" ]; then
+		PROJECT_PATH=$(readlink -f "${HOME}/project/udjat/${PROJECT_NAME}")
+		return
+	fi
+
+#	PROJECT_PATH="${HOME}/project/udjat/$(basename $PWD | rev | cut -d- -f1 | rev)"
+#	if [ -d "${PROJECT_PATH}" ]; then
+#		return
+#	fi
+
+	echo "Unable to identify project"
+	exit -1
+
+}
 
 make_link() {
 	#
-	# $1 = Project filename
-	# $2 = osc filename
+	# $1 = osc filename
+	# $2 = Project filename
 	#
-	mkdir -p $(dirname ${1})
-	if [ "$?" != "0" ]; then
-		exit -1
-	fi
+	if [ -e "${1}" ]; then
 
-	if [ -e "${2}" ]; then
-		echo "${2} -> ${1} (Saving from OSC)" 
+		mkdir -p "$(dirname ${PROJECT_PATH}/rpm)"
+		if [ "${?}" != "0" ]; then
+			echo "Error creating $(dirname ${PROJECT_PATH}/rpm)"
+			exit -1
+		fi
+
+		ln -f "${1}" "${2}"
+		
+	elif [ -e "${2}" ]; then
+
 		ln -f "${2}" "${1}"
-	elif [ -e ${1} ]; then
-		echo "${1} -> ${2} (Restoring from git)"
-		ln "${1}" "${2}"
-	fi
 
+	fi
 }
 
-linux_package() {
-
-	if [ ! -d "../../${PROJECT_NAME}" ]; then
-		echo "Cant find ../../${PROJECT_NAME}"
-		exit -1
-	fi
-
-	#
-	# Link 'DEB' files
-	#
-	for debfile in "changelog"  "compat"  "control"  "postinst"  "postrm"  "rules"  "shlibs"
-	do
-		make_link "../../${PROJECT_NAME}/debian/${debfile}" "debian.${debfile}"
-	done
-
-	if [ -e "${OSC_NAME}.dsc" ]; then
-		make_link "../../${PROJECT_NAME}/debian/${OSC_NAME}.dsc" "${OSC_NAME}.dsc"
-	fi
-	make_link "../../${PROJECT_NAME}/debian/${PROJECT_NAME}.dsc" "${PROJECT_NAME}.dsc"
-
-	#
-	# Link 'CHANGELOG'
-	#
-	make_link "../../${PROJECT_NAME}/CHANGELOG" "$(basename ${PWD}).changes"
-
-	#
-	# Link _service
-	#
-	make_link "../../${PROJECT_NAME}/rpm/_service" "_service"
-	
-	# Never replaces local _servicedata
-	if [ -e "_servicedata" ]; then
-		ln -f "_servicedata" "../../${PROJECT_NAME}/rpm/_servicedata" 
-	fi
-
-	#
-	# Link 'RPM' files
-	#
-	if [ -e "${OSC_NAME}.spec" ]; then
-		make_link "../../${PROJECT_NAME}/rpm/${OSC_NAME}.spec" "${OSC_NAME}.spec"
-	fi
-
-	make_link "../../${PROJECT_NAME}/rpm/${PROJECT_NAME}.spec" "${PROJECT_NAME}.spec"
-
-	#
-	# Link 'ARCH' files
-	#
-	make_link "../../${PROJECT_NAME}/arch/PKGBUILD" "PKGBUILD"
-
-}
-
-mingw_package() {
-
-	if [ ! -d "../../${PROJECT_NAME}" ]; then
-		echo "Cant find ../../${PROJECT_NAME}"
-		exit -1
-	fi
-
-	make_link "../../${PROJECT_NAME}/win/${1}/${PACKAGE_NAME}.spec" "${PACKAGE_NAME}.spec"
-	make_link "../../${PROJECT_NAME}/win/${1}/_service" "_service"
-	make_link "../../${PROJECT_NAME}/win/${1}/_servicedata" "_servicedata"
-	make_link "../../${PROJECT_NAME}/win/${1}/CHANGELOG" "${PACKAGE_NAME}.changes"
-
-}
-
-if [[ ${PACKAGE_NAME} == mingw64-* ]]; then
-	echo "It's a mingw64 package"
-	mingw_package "x86_64"
-	exit 0
+if [ -z ${1} ]; then
+	get_project_path
+elif [ -e "${1}/rpm/${PROJECT_NAME}.spec" ]; then
+	PROJECT_PATH=${1}
+else
+	echo "Não encontrei ${1}/rpm/${PROJECT_NAME}.spec"
+	exit -1
 fi
 
-if [[ ${PACKAGE_NAME} == mingw32-* ]]; then
-	echo "It's a mingw32 package"
-	mingw_package "x86_32"
-	exit 0
-fi
+echo "Project path:	${PROJECT_PATH}"
 
-echo "It's a linux package"
-linux_package
+make_link "${PROJECT_NAME}.spec" "${PROJECT_PATH}/rpm/${PROJECT_NAME}.spec"
+make_link "${PROJECT_NAME}.dsc" "${PROJECT_PATH}/debian/${PROJECT_NAME}.dsc"
+make_link "_service" "${PROJECT_PATH}/rpm/_service"
+make_link "_multibuild" "${PROJECT_PATH}/rpm/_multibuild"
+make_link "_servicedata" "${PROJECT_PATH}/rpm/_servicedata"
+make_link "debian.changelog" "${PROJECT_PATH}/debian/changelog"  
+make_link "debian.compat" "${PROJECT_PATH}/debian/compat"
+make_link "debian.control" "${PROJECT_PATH}/debian/control"
+make_link "debian.postinst" "${PROJECT_PATH}/debian/postinst"
+make_link "debian.postrm" "${PROJECT_PATH}/debian/postrm"
+make_link "debian.rules" "${PROJECT_PATH}/debian/rules"
+make_link "${PROJECT_NAME}.changes" "${PROJECT_PATH}/CHANGELOG"
+make_link "PKGBUILD" "${PROJECT_PATH}/arch/PKGBUILD"
+
+
+
 
 

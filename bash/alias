@@ -1,3 +1,6 @@
+alias open=xdg-open
+alias ed=gnome-text-editor
+alias gedit=gnome-text-editor
 alias project='cd ~/project && cd ${1}'
 
 
