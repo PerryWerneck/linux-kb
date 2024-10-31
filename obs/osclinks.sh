@@ -73,12 +73,18 @@ make_link "${PROJECT_NAME}.dsc" "${PROJECT_PATH}/debian/${PROJECT_NAME}.dsc"
 make_link "_service" "${PROJECT_PATH}/rpm/_service"
 make_link "_multibuild" "${PROJECT_PATH}/rpm/_multibuild"
 make_link "_servicedata" "${PROJECT_PATH}/rpm/_servicedata"
-make_link "debian.changelog" "${PROJECT_PATH}/debian/changelog"  
-make_link "debian.compat" "${PROJECT_PATH}/debian/compat"
-make_link "debian.control" "${PROJECT_PATH}/debian/control"
-make_link "debian.postinst" "${PROJECT_PATH}/debian/postinst"
-make_link "debian.postrm" "${PROJECT_PATH}/debian/postrm"
-make_link "debian.rules" "${PROJECT_PATH}/debian/rules"
+
+if [ ! -e ${PROJECT_PATH}/meson.build ]; then
+	make_link "debian.changelog" "${PROJECT_PATH}/debian/changelog"  
+	make_link "debian.compat" "${PROJECT_PATH}/debian/compat"
+	make_link "debian.control" "${PROJECT_PATH}/debian/control"
+	make_link "debian.postinst" "${PROJECT_PATH}/debian/postinst"
+	make_link "debian.postrm" "${PROJECT_PATH}/debian/postrm"
+	make_link "debian.rules" "${PROJECT_PATH}/debian/rules"
+else
+	echo "Meson project, ignoring deb control files. Use debbuild"
+fi
+
 make_link "${PROJECT_NAME}.changes" "${PROJECT_PATH}/CHANGELOG"
 make_link "PKGBUILD" "${PROJECT_PATH}/arch/PKGBUILD"
 

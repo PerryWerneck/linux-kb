@@ -1,0 +1,42 @@
+#!/bin/bash
+
+if [ -e ./.environment ]; then
+	cat ./.environment
+	. ./.environment
+fi
+
+if [ -e .build/build.ninja ]; then
+	ninja -C .build
+	if [ "${?}" != "0" ]; then
+		exit ${?}
+	fi
+	if [ -z ${EXENAME}]; then
+		EXENAME=$(find .build -maxdepth 1 -type f -executable -print | grep -v '.so' | head --lines=1)
+	fi
+
+elif [ -e Makefile ]; then
+	make Debug
+	if [ "${?}" != "0" ]; then
+		exit ${?}
+	fi
+	if [ -z ${EXENAME}]; then
+		EXENAME=$(find .bin/Debug -maxdepth 1 -type f -executable -print | grep -v '.so' | head --lines=1)
+	fi
+fi
+
+if [ ! -z ${EXENAME} ]; then
+	echo "Running ${EXENAME} ..."
+	if [ -x /usr/bin/valgrind ]; then
+		/usr/bin/valgrind \
+			--leak-check=full \
+			--track-origins=yes \
+			--gen-suppressions=all \
+			--suppressions=valgrind.suppression \
+			${EXENAME}
+	else
+		${EXENAME}
+	fi
+	exit ${?}	
+fi
+
+

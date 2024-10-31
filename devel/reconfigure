@@ -1,0 +1,15 @@
+#!/bin/bash
+
+if [ -e ./meson.build ]; then
+	rm -fr .build
+	meson setup --reconfigure --wipe -D debug=true .build
+	exit ${?}
+fi
+
+if [ -x ./autogen.sh ]; then
+	./autogen.sh
+	exit ${?}
+fi
+
+echo "Invalid path"
+

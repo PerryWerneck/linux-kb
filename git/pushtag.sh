@@ -22,6 +22,18 @@ if [ -z ${1} ]; then
 		echo "Detected tag was ${TAGNUMBER}"
 	fi
 	
+	if [ -e meson.build ]; then
+		if [ -e _build ]; then
+			TAGNUMBER=$(meson introspect --projectinfo _build | jq -r '.version')	
+		elif [ -e .build ]; then
+			TAGNUMBER=$(meson introspect --projectinfo .build | jq -r '.version')	
+		else
+			meson setup --reconfigure --wipe -D debug=true .build
+			TAGNUMBER=$(meson introspect --projectinfo .build | jq -r '.version')	
+		fi
+		echo "Detected tag was ${TAGNUMBER}"
+	fi
+	
 	if [ -z ${TAGNUMBER} ]; then
 		TAGNUMBER=$(find . -iname '*.py' -exec grep '__version__' {} \; | cut -d\' -f2 | sort -r -u | head -n 1)
 	fi
@@ -45,6 +57,11 @@ git push
 
 git fetch origin
 
+if [ -e PKGBUILD.mingw ]; then
+	sed -i -e "s@pkgver=\".*\"@pkgver=\"${TAGNUMBER}\"@g" PKGBUILD.mingw
+	git commit --message="Updating PKGBUILD" PKGBUILD.mingw 2>&1 > /dev/null
+fi
+
 git tag -f ${TAGNUMBER}
 git push -f --tags
 
@@ -53,4 +70,5 @@ do
 	echo "Updating ${repo} ..."
 	git push ${repo} -f --tags
 done
+
 
