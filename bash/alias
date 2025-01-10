@@ -2,5 +2,8 @@ alias open=xdg-open
 alias ed=gnome-text-editor
 alias gedit=gnome-text-editor
 alias project='cd ~/project && cd ${1}'
+alias gst='git status -sb'
+alias gcm='git commit -m'
+alias gp='git push'
 
 
