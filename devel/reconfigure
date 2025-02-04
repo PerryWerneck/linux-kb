@@ -1,15 +1,98 @@
 #!/bin/bash
 
-if [ -e ./meson.build ]; then
-	rm -fr .build
-	meson setup --reconfigure --wipe -D debug=true .build
-	exit ${?}
+if [ "$1" == "--help" ]; then
+	echo "Usage: reconfigure --win64 for windows 64 bit"
+	exit 0
 fi
 
-if [ -x ./autogen.sh ]; then
-	./autogen.sh
-	exit ${?}
+MODE="linux"
+if [ "$1" == "--win64" ]; then
+	MODE="win64"
 fi
 
-echo "Invalid path"
+if [ "$1" == "--win" ]; then
+	MODE="win64"
+fi
+
+if [ "$1" == "win" ]; then
+	MODE="win64"
+fi
+
+if [ -e ./env.${MODE} ]; then
+	source ./env.${MODE}
+fi
+
+if [ "${MODE}" == "win64" ]; then
+
+	#
+	# WIN64 build
+	#
+
+	if [ -e ./meson.build ]; then
+
+		meson \
+			setup \
+			--reconfigure \
+			--wipe \
+			--cross-file /usr/lib/rpm/macros.d/meson-mingw64-cross-file.txt \
+			--buildtype=debug \
+			-D debug=true \
+			.build
+
+	elif [ -x ./autogen.sh ]; then
+
+		if [ -x ./autogen.sh ]; then
+			NOCONFIGURE=1 ./autogen.sh
+			if [ "$?" != "0" ]; then
+				exit $?	
+			fi
+		fi
+
+		export HOST_CC=$(which gcc)
+
+		./configure --cache-file=.win64.cache \
+					--host=x86_64-w64-mingw32 \
+					--prefix=/usr/x86_64-w64-mingw32/sys-root/mingw \
+					--libdir=/usr/x86_64-w64-mingw32/sys-root/mingw/lib \
+					$@
+
+	else
+
+		echo "Cant identify build system"
+		exit -1
+
+	fi
+
+else 
+
+	#
+	# Linux build
+	#
+
+	if [ -e ./meson.build ]; then
+		rm -fr .build
+		meson \
+			setup \
+			--reconfigure \
+			--wipe \
+			--buildtype=debug \
+			-D debug=true \
+			.build
+	
+	elif [ -x ./autogen.sh ]; then
+
+		./autogen.sh
+		if [ "$?" != "0" ]; then
+			exit $?	
+		fi
+
+	else
+
+		echo "Cant identify build system"
+		exit -1
+		
+	fi
+
+fi
+
 

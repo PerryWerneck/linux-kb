@@ -43,6 +43,6 @@ do
 done
 rm -f ${TEMPFILE}
 
-echo ${cmdline}
+${cmdline}
 
 
