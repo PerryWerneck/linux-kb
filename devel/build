@@ -1,18 +1,29 @@
 #!/bin/bash
 
-if [ -e meson.build ]; then
-	meson compile -C .build
-	exit ${?}
-fi
+while [ ${PWD} != '/' ]
+do
 
-if [ -e .build/build.ninja ]; then
-	ninja -C .build
-	exit ${?}
-fi
+	if [ -e meson.build ]; then
+		echo "Building in ${PWD}..."
+		meson compile -C .build
+		exit ${?}
+	fi
 
-if [ -e Makefile ]; then
-	make Debug
-	exit ${?}
-fi
+	if [ -e .build/build.ninja ]; then
+		echo "Building in ${PWD}..."
+		ninja -C .build
+		exit ${?}
+	fi
 
+	if [ -e Makefile ]; then
+		echo "Building in ${PWD}..."
+		make Debug
+		exit ${?}
+	fi
 
+	cd ..
+
+done
+
+echo "Unable to file build system"
+exit 1

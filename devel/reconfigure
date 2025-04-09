@@ -73,6 +73,7 @@ else
 		rm -fr .build
 		meson \
 			setup \
+			--prefix=/usr \
 			--reconfigure \
 			--wipe \
 			--buildtype=debug \

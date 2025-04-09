@@ -1,44 +1,70 @@
 #!/bin/bash
 
-if [ -e ./.environment ]; then
-	cat ./.environment
-	. ./.environment
-fi
+while [ ${PWD} != '/' ]
+do
 
-if [ -e .build/build.ninja ]; then
-	ninja -C .build
-	if [ "${?}" != "0" ]; then
-		exit ${?}
-	fi
-	if [ -z ${EXENAME}]; then
-		EXENAME=$(find .build -maxdepth 1 -type f -executable -print | grep -v '.so' | head --lines=1)
+	if [ -e ./.environment ]; then
+		cat ./.environment
+		. ./.environment
 	fi
 
-elif [ -e Makefile ]; then
-	make Debug
-	if [ "${?}" != "0" ]; then
-		exit ${?}
-	fi
-	if [ -z ${EXENAME}]; then
-		EXENAME=$(find .bin/Debug -maxdepth 1 -type f -executable -print | grep -v '.so' | head --lines=1)
-	fi
-fi
+	if [ -x ./run.sh ]; then
+		./run.sh ${@}
+		rc=${?}
+		echo "Custom script finished with rc=${rc}"
+		exit ${rc}
 
-if [ ! -z ${EXENAME} ]; then
-	echo "Running ${EXENAME} ..."
-	if [ -x /usr/bin/valgrind ]; then
-		touch valgrind.suppression
-		/usr/bin/valgrind \
-			--vgdb=no \
-			--leak-check=full \
-			--track-origins=yes \
-			--gen-suppressions=all \
-			--suppressions=valgrind.suppression \
+	elif [ -x ./.run.sh ]; then
+		echo ./run.sh ${@}
+		rc=${?}
+		echo "Custom script finished with rc=${rc}"
+		exit ${rc}
+
+	elif [ -e .build/build.ninja ]; then
+		ninja -C .build
+		if [ "${?}" != "0" ]; then
+			exit ${?}
+		fi
+		if [ -z ${EXENAME} ]; then
+			EXENAME=$(find .build -maxdepth 1 -type f -executable -print | grep -v '.so' | head --lines=1)
+		fi
+
+	elif [ -e Makefile ]; then
+		make Debug
+		if [ "${?}" != "0" ]; then
+			exit ${?}
+		fi
+		if [ -z ${EXENAME}]; then
+			EXENAME=$(find .bin/Debug -maxdepth 1 -type f -executable -print | grep -v '.so' | head --lines=1)
+		fi
+
+	fi
+
+	if [ ! -z ${EXENAME} ]; then
+		echo "${PWD}"
+		echo "Running ${EXENAME} ..."
+		if [ -x /usr/bin/valgrind ]; then
+			touch valgrind.suppression
+			/usr/bin/valgrind \
+				--vgdb=no \
+				--leak-check=full \
+				--track-origins=yes \
+				--gen-suppressions=all \
+				--suppressions=valgrind.suppression \
+				${EXENAME}
+		else
 			${EXENAME}
-	else
-		${EXENAME}
-	fi
-	exit ${?}	
-fi
+		fi
+		rc=${?}
+		echo "${EXENAME} exits with ${rc}"
+		exit ${rc}	
 
+	fi
+
+	cd ..
+
+done
+
+echo "Unable to find build system"
+exit 1
 

@@ -12,6 +12,14 @@ if [ -e ./meson.build ]; then
 		exit -1
 	fi
 
+	if [ -e po/meson.build ]; then
+		if [ -d src ]; then
+			find src -name *.cc | grep -v testprogram > po/POTFILES.in
+			find src -name *.c | grep -v testprogram >> po/POTFILES.in
+		fi
+		meson compile -C .build $(meson introspect --targets .build | jq -r '.[].name' | grep 'update-po')
+	fi
+
 	rm -fr ~/tmp/test-install
 
 	if [ -z ${1} ]; then

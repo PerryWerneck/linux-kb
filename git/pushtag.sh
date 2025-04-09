@@ -27,6 +27,7 @@ if [ -z ${1} ]; then
 		if [ -e po/meson.build ]; then
 			if [ -d src ]; then
 				find src -name *.cc | grep -v testprogram > po/POTFILES.in
+				find src -name *.c | grep -v testprogram >> po/POTFILES.in
 			fi
 			meson compile -C .build $(meson introspect --targets .build | jq -r '.[].name' | grep 'update-po')
 		fi
@@ -84,7 +85,9 @@ do
 	sed -i -e "s@^Version:.*\$@Version: ${TAGNUMBER}@g" ${rpm}
 done
 
-find src -name *.cc | grep -v testprogram > po/POTFILES.in
+if [ -d src ]; then
+	find src -name *.cc | grep -v testprogram > po/POTFILES.in
+fi
 
 git commit --message="Publishing updated version ${TAGNUMBER}" -a 2>&1 > /dev/null
 git push

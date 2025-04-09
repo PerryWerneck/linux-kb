@@ -13,7 +13,12 @@ VERSION=$(meson introspect --projectinfo .build | jq -r '.version' | cut -d. -f1
 
 for lib in .build/*.so.${VERSION}
 do
-	echo ln -sf "$(readlink -f ${lib})" "${LIBDIR}/$(basename ${lib})"
+	sudo ln -sf "$(readlink -f ${lib})" "${LIBDIR}/$(basename ${lib})"
+done
+
+for lib in .build/*.a
+do
+	sudo ln -sf "$(readlink -f ${lib})" "${LIBDIR}/$(basename ${lib})"
 done
 
 #MINGGW64_LIBDIR=$(rpm --eval %{_mingw64_libdir})
