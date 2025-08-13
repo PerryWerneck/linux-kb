@@ -1,4 +1,6 @@
 #!/bin/bash
+export DESTDIR=~/tmp/test-install
+rm -fr ${DESTDIR}
 
 if [ -e ./meson.build ]; then
 	rm -fr .build
@@ -45,21 +47,44 @@ if [ -e ./meson.build ]; then
 
 	if [ -z ${1} ]; then
 
-		DESTDIR=~/tmp/test-install meson install -C .build
+		meson install --skip-subprojects -C .build
 		if [ "${?}" != "0" ]; then
 			exit -1
 		fi
 
 	else
 
-		DESTDIR=~/tmp/test-install meson install -C .build --tags ${1}
+		meson install -C .build --tags ${1}
 		if [ "${?}" != "0" ]; then
 			exit -1
 		fi
 
 	fi
 
+elif [ -x ./autogen.sh ]; then
 
-	find ~/tmp/test-install
+	./autogen.sh
+	if [ "${?}" != "0" ]; then
+		exit -1
+	fi
+
+	make clean
+	if [ "${?}" != "0" ]; then
+		exit -1
+	fi
+	
+	make all
+	if [ "${?}" != "0" ]; then
+		exit -1
+	fi
+
+	make install
+	if [ "${?}" != "0" ]; then
+		exit -1
+	fi
 
 fi
+
+find ~/tmp/test-install
+
+

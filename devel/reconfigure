@@ -8,14 +8,17 @@ fi
 MODE="linux"
 if [ "$1" == "--win64" ]; then
 	MODE="win64"
+	shift
 fi
 
 if [ "$1" == "--win" ]; then
 	MODE="win64"
+	shift
 fi
 
 if [ "$1" == "win" ]; then
 	MODE="win64"
+	shift
 fi
 
 if [ -e ./env.${MODE} ]; then
@@ -78,6 +81,7 @@ else
 			--wipe \
 			--buildtype=debug \
 			-D debug=true \
+			$@ \
 			.build
 	
 	elif [ -x ./autogen.sh ]; then

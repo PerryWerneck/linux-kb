@@ -4,6 +4,7 @@ while [ ${PWD} != '/' ]
 do
 
 	EXENAME=""
+	ARGUMENTS=""
 
 	if [ -e ./.environment ]; then
 		cat ./.environment
@@ -74,9 +75,9 @@ do
 				--track-origins=yes \
 				--gen-suppressions=all \
 				--suppressions=valgrind.suppression \
-				${EXENAME} ${@}
+				${EXENAME} ${ARGUMENTS} ${@}
 		else
-			${EXENAME} ${@}
+			${EXENAME} ${ARGUMENTS} ${@}
 		fi
 		rc=${?}
 		echo "${EXENAME} exits with ${rc}"
