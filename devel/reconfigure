@@ -77,8 +77,6 @@ else
 		meson \
 			setup \
 			--prefix=/usr \
-			--reconfigure \
-			--wipe \
 			--buildtype=debug \
 			-D debug=true \
 			$@ \

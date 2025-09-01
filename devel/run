@@ -1,5 +1,10 @@
 #!/bin/bash
 
+if [ "${1}" == "gtkdbg" ]; then
+	export GTK_DEBUG="interactive"
+	shift
+fi
+
 while [ ${PWD} != '/' ]
 do
 
@@ -27,7 +32,7 @@ do
 			exit ${rc}
 
 		elif [ -x ./.run.sh ]; then
-			echo ./run.sh ${@}
+			./.run.sh ${@}
 			rc=${?}
 			echo "Custom script finished with rc=${rc}"
 			exit ${rc}
