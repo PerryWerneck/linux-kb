@@ -5,24 +5,51 @@ rm -fr ${DESTDIR}
 if [ -e ./meson.build ]; then
 	rm -fr .build
 
-	meson setup \
-		--buildtype=plain \
-		--prefix=/usr \
-		--libdir=/usr/lib64 \
-		--libexecdir=/usr/libexec \
-		--bindir=/usr/bin \
-		--sbindir=/usr/sbin \
-		--includedir=/usr/include \
-		--datadir=/usr/share \
-		--mandir=/usr/share/man \
-		--infodir=/usr/share/info \
-		--localedir=/usr/share/locale \
-		--sysconfdir=/etc \
-		--localstatedir=/var \
-		--sharedstatedir=/var/lib \
-		--wrap-mode=nodownload \
-		--auto-features=enabled \
-		.build
+	if [ "${1}" == "--win" ]; then
+
+		shift
+		meson setup \
+			--cross-file /usr/lib/rpm/macros.d/meson-mingw64-cross-file.txt \
+			--buildtype=plain \
+			--prefix=/ \
+			--libdir=/bin \
+			--bindir=/bin \
+			--sbindir=/bin \
+			--includedir=/usr/include \
+			--datadir=/usr/share \
+			--mandir=/usr/share/man \
+			--infodir=/usr/share/info \
+			--localedir=/usr/share/locale \
+			--sysconfdir=/etc \
+			--localstatedir=/var \
+			--sharedstatedir=/var/lib \
+			--wrap-mode=nodownload \
+			--auto-features=enabled \
+			.build
+
+	else
+
+		meson setup \
+			--buildtype=plain \
+			--prefix=/usr \
+			--libdir=/usr/lib64 \
+			--libexecdir=/usr/libexec \
+			--bindir=/usr/bin \
+			--sbindir=/usr/sbin \
+			--includedir=/usr/include \
+			--datadir=/usr/share \
+			--mandir=/usr/share/man \
+			--infodir=/usr/share/info \
+			--localedir=/usr/share/locale \
+			--sysconfdir=/etc \
+			--localstatedir=/var \
+			--sharedstatedir=/var/lib \
+			--wrap-mode=nodownload \
+			--auto-features=enabled \
+			.build
+	
+	fi
+
 	if [ "${?}" != "0" ]; then
 		exit -1
 	fi
