@@ -104,5 +104,4 @@ do
 	git push ${repo} -f --tags
 done
 
-if [ -e configure.ac ]; then
-fi
+
