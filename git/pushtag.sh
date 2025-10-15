@@ -60,6 +60,10 @@ fi
 git push
 git fetch origin
 
+if [ -e ./legacy/version ]; then
+	echo "${TAGNUMBER}" > ./legacy/version
+fi
+
 if [ -e PKGBUILD.mingw ]; then
 	sed -i -e "s@pkgver=\".*\"@pkgver=\"${TAGNUMBER}\"@g" PKGBUILD.mingw
 fi
@@ -84,10 +88,6 @@ for rpm in $(find . -maxdepth 2 -name '*.spec')
 do
 	sed -i -e "s@^Version:.*\$@Version: ${TAGNUMBER}@g" ${rpm}
 done
-
-if [ -e ./legacy/version ]; then
-	echo "${TAGNUMBER}" > .legacy/version
-fi
 
 if [ -d src ]; then
 	find src -name *.cc | grep -v testprogram > po/POTFILES.in
