@@ -29,7 +29,7 @@ if [ -z ${1} ]; then
 				find src -name *.cc | grep -v testprogram > po/POTFILES.in
 				find src -name *.c | grep -v testprogram >> po/POTFILES.in
 			fi
-			meson compile -C .build $(meson introspect --targets .build | jq -r '.[].name' | grep 'update-po')
+			meson compile -C .build $(meson introspect --targets .build | jq -r '.[].name' | grep 'update-po' | head --lines=1)
 		fi
 
 	elif [ -e configure.ac ]; then
@@ -80,17 +80,20 @@ if [ -e pyproject.toml ]; then
 	sed -i -e "s@version = '.*'@version = '${TAGNUMBER}'@g" pyproject.toml
 fi
 
-for rpm in $(find . -name '*.spec')
+for rpm in $(find . -maxdepth 2 -name '*.spec')
 do
 	sed -i -e "s@^Version:.*\$@Version: ${TAGNUMBER}@g" ${rpm}
 done
 
-if [ -d src ]; then
-	find src -name *.cc | grep -v testprogram > po/POTFILES.in
+if [ -e ./legacy/version ]; then
+	echo "${TAGNUMBER}" > .legacy/version
 fi
 
-git commit --message="Publishing updated version ${TAGNUMBER}" -a 2>&1 > /dev/null
-git push
+if [ -d src ]; then
+	find src -name *.cc | grep -v testprogram > po/POTFILES.in
+	find src -name *.c | grep -v testprogram >> po/POTFILES.in
+	find src -name *.h | grep -v testprogram >> po/POTFILES.in
+fi
 
 git tag -f ${TAGNUMBER}
 git push -f --tags
@@ -101,4 +104,5 @@ do
 	git push ${repo} -f --tags
 done
 
-
+if [ -e configure.ac ]; then
+fi
