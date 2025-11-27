@@ -1,29 +1,63 @@
 #!/bin/bash
 
+build_with_meson() {
+	echo "Building in ${PWD}..."
+	meson compile -C .build
+	exit ${?}
+}
+
+makefile() {
+	echo "Building in ${PWD}..."
+	make Debug
+	exit ${?}
+}
+
+if [ "${1}" == "" ]; then
+	MODE="auto"
+else
+	MODE="${1}"
+fi
+
 while [ ${PWD} != '/' ]
 do
 
-	if [ -e meson.build ]; then
-		echo "Building in ${PWD}..."
-		meson compile -C .build
-		exit ${?}
-	fi
+	if [ "${MODE}" == "auto" ]; then
+		if [ -e meson.build ]; then
+			build_with_meson
+		fi
 
-	if [ -e .build/build.ninja ]; then
-		echo "Building in ${PWD}..."
-		ninja -C .build
-		exit ${?}
-	fi
+		if [ -e Makefile ]; then
+			makefile
+		fi
 
-	if [ -e Makefile ]; then
-		echo "Building in ${PWD}..."
-		make Debug
-		exit ${?}
+	elif [ ${MODE} == 'meson' ]; then
+		if [ -e meson.build ]; then
+			meson
+		fi
+
+	elif [ ${MODE} == 'make' ]; then
+		if [ -e Makefile ]; then
+			makefile
+		fi
+
+	elif [ ${MODE} == 'flatpak' ]; then
+		if [ -d ./flatpak ]; then
+			rm -fr ./.flatpak
+			flatpak-builder --disable-cache --force-clean --user ./.flatpak $(find flathub -name '*.yml' | head -1)
+			exit ${?}
+		fi
+		if [ -d ./flathub ]; then
+			rm -fr ./.flatpak
+			flatpak-builder --disable-cache --force-clean --install --user ./.flatpak $(find flathub -name '*.yml' | head -1)
+			# flatpak-builder --run ./.flatpak $(find flathub -name '*.yml' | head -1) pw3270
+			exit ${?}
+		fi
+
 	fi
 
 	cd ..
 
 done
 
-echo "Unable to file build system"
+echo "Unable to identify build system"
 exit 1

@@ -89,10 +89,12 @@ do
 	sed -i -e "s@^Version:.*\$@Version: ${TAGNUMBER}@g" ${rpm}
 done
 
-if [ -d src ]; then
-	find src -name *.cc | grep -v testprogram > po/POTFILES.in
-	find src -name *.c | grep -v testprogram >> po/POTFILES.in
-	find src -name *.h | grep -v testprogram >> po/POTFILES.in
+if [ -d po ]
+	if [ -d src ]; then
+		find src -name *.cc | grep -v testprogram > po/POTFILES.in
+		find src -name *.c | grep -v testprogram >> po/POTFILES.in
+		find src -name *.h | grep -v testprogram >> po/POTFILES.in
+	fi
 fi
 
 git tag -f ${TAGNUMBER}
