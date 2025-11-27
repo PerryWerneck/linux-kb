@@ -89,7 +89,7 @@ do
 	sed -i -e "s@^Version:.*\$@Version: ${TAGNUMBER}@g" ${rpm}
 done
 
-if [ -d po ]
+if [ -d po ]; then
 	if [ -d src ]; then
 		find src -name *.cc | grep -v testprogram > po/POTFILES.in
 		find src -name *.c | grep -v testprogram >> po/POTFILES.in
