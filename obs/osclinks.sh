@@ -73,6 +73,7 @@ echo "Project path:	${PROJECT_PATH}"
 echo ""
 
 make_link "${PROJECT_NAME}.spec" "${PROJECT_PATH}/rpm/${PROJECT_NAME}.spec"
+make_link "${PROJECT_NAME}.rpmlintrc" "${PROJECT_PATH}/rpm/${PROJECT_NAME}.rpmlintrc"
 
 if [ "$(echo ${PROJECT_NAME} | grep -c 'mingw')" == "0" ]; then
 	make_link "_servicedata" "${PROJECT_PATH}/rpm/_servicedata"

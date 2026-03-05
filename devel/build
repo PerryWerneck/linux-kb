@@ -6,6 +6,12 @@ build_with_meson() {
 	exit ${?}
 }
 
+build_with_python() {
+	echo "Building in ${PWD}..."
+	python3 -m build --wheel
+	exit ${?}
+}
+
 makefile() {
 	echo "Building in ${PWD}..."
 	make Debug
@@ -22,11 +28,14 @@ while [ ${PWD} != '/' ]
 do
 
 	if [ "${MODE}" == "auto" ]; then
-		if [ -e meson.build ]; then
-			build_with_meson
-		fi
 
-		if [ -e Makefile ]; then
+		if [ -e pyproject.toml ]; then
+			build_with_python
+
+		elif [ -e meson.build ]; then
+			build_with_meson
+
+		elif [ -e Makefile ]; then
 			makefile
 		fi
 
@@ -41,18 +50,25 @@ do
 		fi
 
 	elif [ ${MODE} == 'flatpak' ]; then
+
+		YML_FILE=$(find flathub -name '*.yml' | head -1)
+		rm -fr ./.flatpak
+		
 		if [ -d ./flatpak ]; then
-			rm -fr ./.flatpak
-			flatpak-builder --disable-cache --force-clean --user ./.flatpak $(find flathub -name '*.yml' | head -1)
-			exit ${?}
-		fi
-		if [ -d ./flathub ]; then
-			rm -fr ./.flatpak
 			flatpak-builder --disable-cache --force-clean --install --user ./.flatpak $(find flathub -name '*.yml' | head -1)
-			# flatpak-builder --run ./.flatpak $(find flathub -name '*.yml' | head -1) pw3270
-			exit ${?}
+			rc=${?}
+		elif [ -d ./flathub ]; then
+			echo "Building Flatpak using manifest: ${YML_FILE}"
+			flatpak-builder --disable-cache --force-clean --install --user ./.flatpak ${YML_FILE}
+			rc=${?}
 		fi
 
+		if [ ${rc} -ne 0 ]; then
+			echo "Flatpak build failed"
+			exit ${rc}
+		fi
+
+		exit 0
 	fi
 
 	cd ..

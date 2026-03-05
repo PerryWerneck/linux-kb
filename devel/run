@@ -37,6 +37,9 @@ do
 			echo "Custom script finished with rc=${rc}"
 			exit ${rc}
 
+		elif [ -e pyproject.toml ]; then
+			python3 -m build --wheel
+
 		elif [ -e meson.build ]; then
 
 			meson compile -C .build
