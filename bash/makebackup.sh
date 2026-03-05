@@ -33,7 +33,7 @@ if [ -d "/run/media/perry/Transporte500/backup" ]; then
 		--exclude='tmp' \
 		--exclude='.local/share/gvfs-metadata' \
 		--exclude='.config/user-share' \
-		--exclude='.*/.git/*' \
+		--exclude='*/.git/*' \
 		~ \
 		/run/media/perry/Transporte500/backup
 
@@ -70,7 +70,7 @@ else
 		--exclude='tmp' \
 		--exclude='.local/share/gvfs-metadata' \
 		--exclude='.config/user-share' \
-		--exclude='.*/.git/*' \
+		--exclude='*/.git/*' \
 		~ \
 		perry@dunga:/home/perry/backup
 
