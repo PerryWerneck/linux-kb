@@ -31,9 +31,11 @@ if [ -d "/run/media/perry/Transporte500/backup" ]; then
 		--exclude='.local/share/akonadi' \
 		--exclude='.local/share/TelegramDesktop' \
 		--exclude='tmp' \
+		--exclude='.tmp' \
 		--exclude='.local/share/gvfs-metadata' \
 		--exclude='.config/user-share' \
 		--exclude='*/.git/*' \
+		--exclude='*/.build/*' \
 		~ \
 		/run/media/perry/Transporte500/backup
 
@@ -68,10 +70,26 @@ else
 		--exclude='.local/share/akonadi' \
 		--exclude='.local/share/TelegramDesktop' \
 		--exclude='tmp' \
+		--exclude='.tmp' \
 		--exclude='.local/share/gvfs-metadata' \
 		--exclude='.config/user-share' \
 		--exclude='*/.git/*' \
+		--exclude='*/.build/*' \
 		~ \
 		perry@dunga:/home/perry/backup
 
+	rsync \
+		--verbose \
+		--human-readable \
+		--compress \
+		--recursive \
+		--dirs \
+		--inplace \
+		--delete \
+		--delete-excluded \
+		--archive \
+		--chown=perry:perry \
+		--chmod=D755,F644 \
+		/etc/apache2/conf.d/* \
+		perry@dunga:/home/perry/backup/apache2
 fi
