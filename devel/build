@@ -41,7 +41,7 @@ do
 
 	elif [ ${MODE} == 'meson' ]; then
 		if [ -e meson.build ]; then
-			meson
+			build_with_meson
 		fi
 
 	elif [ ${MODE} == 'make' ]; then

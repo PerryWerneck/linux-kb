@@ -73,7 +73,14 @@ echo "Project path:	${PROJECT_PATH}"
 echo ""
 
 make_link "${PROJECT_NAME}.spec" "${PROJECT_PATH}/rpm/${PROJECT_NAME}.spec"
+
+for SPEC in *.spec
+do
+	echo make_link "${SPEC}" "${PROJECT_PATH}/rpm/${SPEC}"
+done
+
 make_link "${PROJECT_NAME}.rpmlintrc" "${PROJECT_PATH}/rpm/${PROJECT_NAME}.rpmlintrc"
+make_link "_multibuild" "${PROJECT_PATH}/rpm/_multibuild"
 
 if [ "$(echo ${PROJECT_NAME} | grep -c 'mingw')" == "0" ]; then
 	make_link "_servicedata" "${PROJECT_PATH}/rpm/_servicedata"

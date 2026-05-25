@@ -5,5 +5,8 @@ alias project='cd ~/project && cd ${1}'
 alias gst='git status -sb'
 alias gcm='git commit -m'
 alias gp='git push'
+alias start='sudo systemctl start ${1}'
+alias status='sudo systemctl status ${1}'
+alias stop='sudo systemctl stop ${1}'
 
 
