@@ -73,15 +73,16 @@ do
 	fi
 
 	if [ -z ${EXENAME} ]; then
-		echo "Unable to identify application name"
+		continue
 
-	elif [ -x ${HOME}/.config/project/${EXENAME} ]; then
+	elif [ -x ${HOME}/.config/project/$(basename ${EXENAME}) ]; then
 
 		echo "${PWD}"
 		echo "Running ${EXENAME} with custom script ..."
 		${HOME}/.config/project/${EXENAME}
+		exit $?
 
-	elif [ ! -z ${EXENAME} ]; then
+	else
 		echo "${PWD}"
 		echo "Running ${EXENAME} ..."
 		if [ -x /usr/bin/valgrind ]; then
