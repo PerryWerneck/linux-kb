@@ -79,7 +79,7 @@ do
 
 		echo "${PWD}"
 		echo "Running ${EXENAME} with custom script ..."
-		${HOME}/.config/project/${EXENAME}
+		${HOME}/.config/project/$(basename ${EXENAME})
 		exit $?
 
 	else
