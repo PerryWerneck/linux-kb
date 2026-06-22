@@ -1,7 +1,13 @@
-test -s ~/bin/profile && . ~/bin/profile || true
-test -s ~/bin/git_prompt.profile && . ~/bin/git_prompt.profile || true
 
-export ZYPP_CURL2=1
-export ZYPP_PCK_PRELOAD=1
+if [ -d ~/bin ]; then
+	export PATH=${PATH}:~/bin
+	test -s ~/bin/profile && . ~/bin/profile || true
+	test -s ~/bin/git_prompt.profile && . ~/bin/git_prompt.profile || true
+fi
 
-export WINEPATH="/usr/x86_64-w64-mingw32/sys-root/mingw/bin"
+#export ZYPP_CURL2=1
+#export ZYPP_PCK_PRELOAD=1
+
+if [ -d /usr/x86_64-w64-mingw32/sys-root/mingw/bin ]; then
+	export WINEPATH="/usr/x86_64-w64-mingw32/sys-root/mingw/bin"
+fi
