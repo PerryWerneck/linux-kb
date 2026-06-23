@@ -3,9 +3,14 @@
 # sudo ln -s $(readlink -f profile) /etc/profile.d/zzzz-$(USER).sh
 #
 
-if [ -d ~/bin ]; then
-	export PATH=${PATH}:~/bin
+if [ -d ${HOME}/bin ]; then
+
+	if [[ ":$PATH:" != *":${HOME}/bin"* ]]; then
+		export PATH="$PATH:${HOME}/bin"
+	fi
+
 	test -s ~/bin/profile && . ~/bin/profile || true
+	
 fi
 
 export ZYPP_CURL2=1
