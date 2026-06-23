@@ -10,7 +10,6 @@ if [ -d ${HOME}/bin ]; then
 	fi
 
 	test -s ~/bin/profile && . ~/bin/profile || true
-	
 fi
 
 export ZYPP_CURL2=1
