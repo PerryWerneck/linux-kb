@@ -1,0 +1,22 @@
+#!/bin/bash
+
+for path in $(find . -type d -name 'subprojects' | grep -v .build)
+do
+	project_path=$(dirname ${path})
+	echo "Project ${project_path}"
+	pushd ${project_path} 2>&1 > /dev/null
+	if [ -d .git ];then
+		git clean -d -f
+	fi
+	popd 2>&1 > /dev/null
+	
+	for subproject in ${path}/* 
+	do
+		if [ -d ${subproject} ]; then
+			if [ -e "${subproject}.wrap" ]; then
+				echo "    Cleaning subproject ${subproject}"
+				rm -fr ${subproject}
+			fi
+		fi
+	done
+done
