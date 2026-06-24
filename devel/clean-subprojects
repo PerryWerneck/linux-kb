@@ -8,15 +8,18 @@ do
 	if [ -d .git ];then
 		git clean -d -f
 	fi
+	if [ -e meson.build ]; then
+		meson subprojects purge --confirm
+	fi
 	popd 2>&1 > /dev/null
 	
-	for subproject in ${path}/* 
-	do
-		if [ -d ${subproject} ]; then
-			if [ -e "${subproject}.wrap" ]; then
-				echo "    Cleaning subproject ${subproject}"
-				rm -fr ${subproject}
-			fi
-		fi
-	done
+	#for subproject in ${path}/* 
+	#do
+	#	if [ -d ${subproject} ]; then
+	#		if [ -e "${subproject}.wrap" ]; then
+	#			echo "    Cleaning subproject ${subproject}"
+	#			rm -fr ${subproject}
+	#		fi
+	#	fi
+	#done
 done
